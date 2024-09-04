@@ -1,0 +1,9 @@
+App(
+    appid="voyah_pass",
+    name="Voyah Password",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="voyah_pass_main",
+    fap_icon="voyah_pass.png",
+    fap_category="Misc",
+    fap_icon_assets="images",
+)
