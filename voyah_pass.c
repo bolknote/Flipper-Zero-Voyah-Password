@@ -1,5 +1,4 @@
 #include "voyah_pass.h"
-#include "voyah_pass_icons.h"
 
 FuriString* voyah_pass_get_pass(uint16_t day, uint16_t month, uint16_t year) {
     FuriString* password = furi_string_alloc();
