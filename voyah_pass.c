@@ -8,7 +8,7 @@ FuriString* voyah_pass_get_pass(uint16_t day, uint16_t month, uint16_t year) {
 
     for(size_t i = 0; i < 4; i++) {
         FuriString* v = furi_string_alloc_printf(
-            "%d%s", (dm % 10) + (year % 10), furi_string_get_cstr(password));
+            "%u%s", (dm % 10) + (year % 10), furi_string_get_cstr(password));
         dm /= 10;
         year /= 10;
 
@@ -24,12 +24,12 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
 
     canvas_clear(canvas);
 
-    uint16_t y = (canvas_height(canvas) - icon_get_height(&I_logo_38x54)) / 2;
+    const uint16_t y = (canvas_height(canvas) - icon_get_height(&I_logo_38x54)) / 2;
     canvas_draw_icon(canvas, 0, y, &I_logo_38x54);
 
-    size_t font_height = canvas_current_font_height(canvas);
+    const size_t font_height = canvas_current_font_height(canvas);
 
-    uint16_t x = icon_get_width(&I_logo_38x54) + 5;
+    const uint16_t x = icon_get_width(&I_logo_38x54) + 5;
     canvas_draw_str(canvas, x, y + font_height, "Today's passwords:");
 
     DateTime datetime;
@@ -37,15 +37,15 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
 
     FuriString* password = voyah_pass_get_pass(datetime.day, datetime.month, datetime.year);
 
-    uint32_t now = furi_hal_rtc_get_timestamp();
+    const uint32_t now = furi_hal_rtc_get_timestamp();
 
     DateTime tomorrow;
-    datetime_timestamp_to_datetime(now + 24 * 60 * 60, &tomorrow);
+    datetime_timestamp_to_datetime(now + SECONDS_PER_DAY, &tomorrow);
     FuriString* tomorrow_password =
         voyah_pass_get_pass(tomorrow.day, tomorrow.month, tomorrow.year);
 
     DateTime yesterday;
-    datetime_timestamp_to_datetime(now - 24 * 60 * 60, &yesterday);
+    datetime_timestamp_to_datetime(now - SECONDS_PER_DAY, &yesterday);
     FuriString* yesterday_password =
         voyah_pass_get_pass(yesterday.day, yesterday.month, yesterday.year);
 
