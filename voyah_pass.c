@@ -19,7 +19,7 @@ FuriString* voyah_pass_get_pass(uint16_t day, uint16_t month, uint16_t year) {
 }
 
 void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
-    furi_assert(ctx);
+    UNUSED(ctx);
 
     canvas_clear(canvas);
 
@@ -62,7 +62,6 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
 }
 
 static void voyah_pass_input_callback(InputEvent* input_event, void* ctx) {
-    furi_assert(ctx);
     furi_message_queue_put((FuriMessageQueue*)ctx, input_event, FuriWaitForever);
 }
 
@@ -81,8 +80,6 @@ VoyahPassApp* voyah_pass_app_alloc() {
 }
 
 void voyah_pass_app_free(VoyahPassApp** app) {
-    furi_assert(*app);
-
     view_port_enabled_set((*app)->view_port, false);
     gui_remove_view_port((*app)->gui, (*app)->view_port);
     view_port_free((*app)->view_port);
