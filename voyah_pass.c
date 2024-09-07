@@ -18,10 +18,80 @@ FuriString* voyah_pass_get_pass(uint16_t day, uint16_t month, uint16_t year) {
     return password;
 }
 
-void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
-    UNUSED(ctx);
+bool voyah_pass_read_tz(VoyahPassTZ* tz) {
+    Storage* storage = furi_record_open(RECORD_STORAGE);
+    File* file = storage_file_alloc(storage);
 
+    if(!storage_file_open(file, VOYAH_PASS_TZ_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
+        return false;
+    }
+
+    bool result = storage_file_read(file, tz, sizeof(VoyahPassTZ)) == sizeof(VoyahPassTZ);
+
+    storage_file_close(file);
+    storage_file_free(file);
+    furi_record_close(RECORD_STORAGE);
+
+    return result;
+}
+
+void voyah_pass_set_tz_button(Canvas* canvas, const VoyahPassTZ* tz) {
+    furi_check(canvas);
+
+    if(tz != NULL) {
+        FuriString* tz_str = furi_string_alloc_printf("%+0d:%0d", tz->hours, tz->minutes);
+        elements_button_right(canvas, furi_string_get_cstr(tz_str));
+        furi_string_free(tz_str);
+    } else {
+        elements_button_right(canvas, "Set TZ");
+    }
+}
+
+void voyah_pass_print_password(Canvas* canvas, int32_t x, int32_t y, const VoyahPassTZ* tz) {
+    furi_check(canvas);
+
+    const uint32_t now = furi_hal_rtc_get_timestamp();
+    FuriString* password;
+    DateTime datetime;
+
+    if(tz == NULL) {
+        furi_hal_rtc_get_datetime(&datetime);
+        password = voyah_pass_get_pass(datetime.day, datetime.month, datetime.year);
+
+        DateTime tomorrow;
+        datetime_timestamp_to_datetime(now + 24 * 60 * 60, &tomorrow);
+        FuriString* tomorrow_password =
+            voyah_pass_get_pass(tomorrow.day, tomorrow.month, tomorrow.year);
+
+        DateTime yesterday;
+        datetime_timestamp_to_datetime(now - 24 * 60 * 60, &yesterday);
+        FuriString* yesterday_password =
+            voyah_pass_get_pass(yesterday.day, yesterday.month, yesterday.year);
+
+        furi_string_cat_printf(
+            password,
+            " or\n%s or\n%s",
+            furi_string_get_cstr(tomorrow_password),
+            furi_string_get_cstr(yesterday_password));
+
+        furi_string_free(tomorrow_password);
+        furi_string_free(yesterday_password);
+    } else {
+        const uint32_t GMT = now - (tz->hours * 60 + tz->minutes) * 60;
+        const uint32_t china_tz = GMT + 8 * 60 * 60;
+
+        datetime_timestamp_to_datetime(china_tz, &datetime);
+        password = voyah_pass_get_pass(datetime.day, datetime.month, datetime.year);
+    }
+
+    elements_multiline_text(canvas, x, y, furi_string_get_cstr(password));
+
+    furi_string_free(password);
+}
+
+void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
     canvas_clear(canvas);
+    const VoyahPassTZ* tz = ((VoyahPassApp*)ctx)->tz;
 
     const uint16_t y = (canvas_height(canvas) - icon_get_height(&I_logo_38x54)) / 2;
     canvas_draw_icon(canvas, 0, y, &I_logo_38x54);
@@ -29,36 +99,11 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
     const size_t font_height = canvas_current_font_height(canvas);
 
     const uint16_t x = icon_get_width(&I_logo_38x54) + 5;
-    canvas_draw_str(canvas, x, y + font_height, "Today's passwords:");
 
-    DateTime datetime;
-    furi_hal_rtc_get_datetime(&datetime);
-
-    FuriString* password = voyah_pass_get_pass(datetime.day, datetime.month, datetime.year);
-
-    const uint32_t now = furi_hal_rtc_get_timestamp();
-
-    DateTime tomorrow;
-    datetime_timestamp_to_datetime(now + SECONDS_PER_DAY, &tomorrow);
-    FuriString* tomorrow_password =
-        voyah_pass_get_pass(tomorrow.day, tomorrow.month, tomorrow.year);
-
-    DateTime yesterday;
-    datetime_timestamp_to_datetime(now - SECONDS_PER_DAY, &yesterday);
-    FuriString* yesterday_password =
-        voyah_pass_get_pass(yesterday.day, yesterday.month, yesterday.year);
-
-    furi_string_cat_printf(
-        password,
-        " or\n%s or\n%s",
-        furi_string_get_cstr(tomorrow_password),
-        furi_string_get_cstr(yesterday_password));
-
-    elements_multiline_text(canvas, x, y + font_height * 2.5, furi_string_get_cstr(password));
-
-    furi_string_free(tomorrow_password);
-    furi_string_free(yesterday_password);
-    furi_string_free(password);
+    voyah_pass_set_tz_button(canvas, tz);
+    canvas_draw_str(
+        canvas, x, y + font_height, tz != NULL ? "Today's password:" : "Today's passwords:");
+    voyah_pass_print_password(canvas, x, y + font_height * 2.5, tz);
 }
 
 static void voyah_pass_input_callback(InputEvent* input_event, void* ctx) {
@@ -75,6 +120,10 @@ VoyahPassApp* voyah_pass_app_alloc() {
 
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     view_port_input_callback_set(app->view_port, voyah_pass_input_callback, app->event_queue);
+
+    if(!voyah_pass_read_tz(app->tz)) {
+        app->tz = NULL;
+    }
 
     return app;
 }
