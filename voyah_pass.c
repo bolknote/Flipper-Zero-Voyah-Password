@@ -144,8 +144,7 @@ void voyah_pass_app_free(VoyahPassApp** app) {
 
 int32_t voyah_pass_main(void* p) {
     UNUSED(p);
-
-    __attribute__((__cleanup__(voyah_pass_app_free))) VoyahPassApp* app = voyah_pass_app_alloc();
+    DESTRUCT(voyah_pass_app_free) app = voyah_pass_app_alloc();
 
     for(InputEvent event;;) {
         furi_check(

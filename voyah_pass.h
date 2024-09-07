@@ -16,6 +16,8 @@
 extern const Icon I_logo_38x54;
 #endif
 
+#define DESTRUCT(func) __attribute__((__cleanup__(func))) __auto_type
+
 typedef struct {
     int8_t hours;
     uint8_t minutes;
