@@ -18,6 +18,11 @@ extern const Icon I_logo_38x54;
 
 #define DESTRUCT(func) __attribute__((__cleanup__(func))) __auto_type
 
+typedef enum {
+    InitialState = 0,
+    DialogState = 1,
+} VoyahPassState;
+
 typedef struct {
     int8_t hours;
     uint8_t minutes;
@@ -28,4 +33,5 @@ typedef struct {
     ViewPort* view_port;
     FuriMessageQueue* event_queue;
     VoyahPassTZ* tz;
+    VoyahPassState state;
 } VoyahPassApp;

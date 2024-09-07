@@ -102,6 +102,9 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
     canvas_draw_str(
         canvas, x, y + font_height, tz == NULL ? "Today's passwords:" : "Today's password:");
     voyah_pass_print_password(canvas, x, y + font_height * 2.5, tz);
+
+    if(((VoyahPassApp*)ctx)->state == DialogState) {
+    }
 }
 
 static void voyah_pass_input_callback(InputEvent* input_event, void* ctx) {
@@ -118,6 +121,8 @@ VoyahPassApp* voyah_pass_app_alloc() {
 
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     view_port_input_callback_set(app->view_port, voyah_pass_input_callback, app->event_queue);
+
+    app->state = InitialState;
 
     app->tz = malloc(sizeof(VoyahPassTZ));
     if(!voyah_pass_read_tz(app->tz)) {
@@ -151,7 +156,18 @@ int32_t voyah_pass_main(void* p) {
         if(event.type == InputTypeShort) {
             switch(event.key) {
             case InputKeyBack:
-                return 0;
+                if(app->state == InitialState) {
+                    return 0;
+                } else {
+                    app->state = InitialState;
+                }
+                break;
+
+            case InputKeyRight:
+                if(app->state == InitialState) {
+                    app->state = DialogState;
+                }
+                break;
 
             default:
                 break;
