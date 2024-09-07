@@ -121,7 +121,9 @@ VoyahPassApp* voyah_pass_app_alloc() {
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     view_port_input_callback_set(app->view_port, voyah_pass_input_callback, app->event_queue);
 
+    app->tz = malloc(sizeof(VoyahPassTZ));
     if(!voyah_pass_read_tz(app->tz)) {
+        free(app->tz);
         app->tz = NULL;
     }
 
@@ -135,6 +137,7 @@ void voyah_pass_app_free(VoyahPassApp** app) {
 
     furi_record_close(RECORD_GUI);
     furi_message_queue_free((*app)->event_queue);
+    free((*app)->tz);
 
     free(*app);
 }
