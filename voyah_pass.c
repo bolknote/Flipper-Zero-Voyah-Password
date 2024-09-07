@@ -21,12 +21,10 @@ FuriString* voyah_pass_get_pass(uint16_t day, uint16_t month, uint16_t year) {
 bool voyah_pass_read_tz(VoyahPassTZ* tz) {
     Storage* storage = furi_record_open(RECORD_STORAGE);
     File* file = storage_file_alloc(storage);
+    const size_t tz_size = sizeof(VoyahPassTZ);
 
-    if(!storage_file_open(file, VOYAH_PASS_TZ_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
-        return false;
-    }
-
-    bool result = storage_file_read(file, tz, sizeof(VoyahPassTZ)) == sizeof(VoyahPassTZ);
+    bool result = storage_file_open(file, VOYAH_PASS_TZ_FILE, FSAM_READ, FSOM_OPEN_EXISTING);
+    result = result || storage_file_read(file, tz, tz_size) == tz_size;
 
     storage_file_close(file);
     storage_file_free(file);
@@ -38,12 +36,12 @@ bool voyah_pass_read_tz(VoyahPassTZ* tz) {
 void voyah_pass_set_tz_button(Canvas* canvas, const VoyahPassTZ* tz) {
     furi_check(canvas);
 
-    if(tz != NULL) {
-        FuriString* tz_str = furi_string_alloc_printf("%+0d:%0d", tz->hours, tz->minutes);
+    if(tz == NULL) {
+        elements_button_right(canvas, "Set TZ");
+    } else {
+        FuriString* tz_str = furi_string_alloc_printf("%+02d:%02d", tz->hours, tz->minutes);
         elements_button_right(canvas, furi_string_get_cstr(tz_str));
         furi_string_free(tz_str);
-    } else {
-        elements_button_right(canvas, "Set TZ");
     }
 }
 
@@ -102,7 +100,7 @@ void voyah_pass_render_callback(Canvas* canvas, void* ctx) {
 
     voyah_pass_set_tz_button(canvas, tz);
     canvas_draw_str(
-        canvas, x, y + font_height, tz != NULL ? "Today's password:" : "Today's passwords:");
+        canvas, x, y + font_height, tz == NULL ? "Today's passwords:" : "Today's password:");
     voyah_pass_print_password(canvas, x, y + font_height * 2.5, tz);
 }
 
